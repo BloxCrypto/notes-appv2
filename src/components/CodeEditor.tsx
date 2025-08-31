@@ -1,13 +1,13 @@
 import { useEffect, useRef } from 'react';
 import Prism from 'prismjs';
 
-// Import the languages we want to support
+// Import languages in dependency order (C must come before C++)
 import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-typescript';
 import 'prismjs/components/prism-python';
 import 'prismjs/components/prism-java';
-import 'prismjs/components/prism-cpp';
 import 'prismjs/components/prism-c';
+import 'prismjs/components/prism-cpp';
 import 'prismjs/components/prism-css';
 import 'prismjs/components/prism-json';
 import 'prismjs/components/prism-markdown';
@@ -32,17 +32,31 @@ export default function CodeEditor({
 
   useEffect(() => {
     if (highlightRef.current && language !== 'plaintext') {
-      // Clear previous content
-      highlightRef.current.innerHTML = '';
-      
-      // Highlight the code
-      const highlighted = Prism.highlight(
-        value || ' ', 
-        Prism.languages[language] || Prism.languages.plaintext,
-        language
-      );
-      
-      highlightRef.current.innerHTML = highlighted;
+      try {
+        // Clear previous content
+        highlightRef.current.innerHTML = '';
+        
+        // Check if language is supported
+        const grammar = Prism.languages[language];
+        if (!grammar) {
+          console.warn(`Language "${language}" not supported, falling back to plaintext`);
+          highlightRef.current.innerHTML = value || ' ';
+          return;
+        }
+        
+        // Highlight the code with error handling
+        const highlighted = Prism.highlight(
+          value || ' ', 
+          grammar,
+          language
+        );
+        
+        highlightRef.current.innerHTML = highlighted;
+      } catch (error) {
+        console.error('Error highlighting code:', error);
+        // Fallback to plain text if highlighting fails
+        highlightRef.current.innerHTML = value || ' ';
+      }
     }
   }, [value, language]);
 
